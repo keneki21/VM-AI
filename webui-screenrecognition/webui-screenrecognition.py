@@ -3,7 +3,7 @@
 from huggingface_hub import snapshot_download
 import os
 os.environ["HF_HUB_DOWNLOAD_TIMEOUT"] = "120"
-os.environ["HF_TOKEN"] = "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"
+os.environ["HF_TOKEN"] = ""
 
 print("\nDownloading WebUI ScreenRecognition...")
 webui_path = snapshot_download(
