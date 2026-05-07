@@ -15,6 +15,7 @@ from PIL import Image
 
 from evaluator.scorer     import UIClipScorer
 from evaluator.detector   import WebUIDetector
+from evaluator.captioner  import UICaptioner
 from evaluator.heuristics import check as heuristic_check
 from evaluator.report     import generate
 
@@ -25,10 +26,13 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 # Load models once at startup
 print("Loading models…")
-_scorer   = UIClipScorer()
-_detector = WebUIDetector()
+_scorer    = UIClipScorer()
+_detector  = WebUIDetector()
+_captioner = UICaptioner()
 if not _detector.available:
     print("  WebUI detector not available — run download_models.py first.")
+if not _captioner.available:
+    print("  BLIP captioner not available — run download_florence.py for richer feedback.")
 print("Ready.\n")
 
 
@@ -87,8 +91,9 @@ def evaluate():
     # Run pipeline
     clip_scores   = _scorer.score(image)
     elements      = _detector.detect(image)
+    elements      = _captioner.enrich(image, elements)
     extra_issues  = heuristic_check(elements, clip_scores)
-    report, _     = generate(clip_scores, extra_issues, file.filename)
+    report, _     = generate(clip_scores, extra_issues, file.filename, elements)
 
     # Build template context
     overall  = report["overall_score"]

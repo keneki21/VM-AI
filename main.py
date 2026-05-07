@@ -12,10 +12,11 @@ import sys
 from pathlib import Path
 from PIL import Image
 
-from evaluator.scorer    import UIClipScorer
-from evaluator.detector  import WebUIDetector
+from evaluator.scorer     import UIClipScorer
+from evaluator.detector   import WebUIDetector
+from evaluator.captioner  import UICaptioner
 from evaluator.heuristics import check as heuristic_check
-from evaluator.report    import generate, save_json
+from evaluator.report     import generate, save_json
 
 
 def evaluate(image_path: str) -> None:
@@ -36,22 +37,27 @@ def evaluate(image_path: str) -> None:
     scorer = UIClipScorer()
     clip_scores = scorer.score(image)
 
-    # --- Step 2: Element detection ---
+    # --- Step 2: Element detection + captioning ---
     print("\n[2/3] Running WebUI element detection...")
-    detector = WebUIDetector()
+    detector  = WebUIDetector()
+    captioner = UICaptioner()
     if not detector.available:
         print("  Skipped — model not downloaded yet.")
         print("  Run:  python download_models.py")
     elements = detector.detect(image)
     if elements:
         print(f"  {len(elements)} elements detected.")
+        elements = captioner.enrich(image, elements)
+        captioned = sum(1 for e in elements if e.get("caption"))
+        if captioned:
+            print(f"  {captioned} elements captioned with Florence-2.")
 
     # --- Step 3: Rule-based heuristic checks ---
     print("\n[3/3] Applying rule-based heuristic checks...")
     extra_issues = heuristic_check(elements, clip_scores)
 
     # --- Report ---
-    report, report_text = generate(clip_scores, extra_issues, str(path))
+    report, report_text = generate(clip_scores, extra_issues, str(path), elements)
     print("\n" + report_text)
 
     out_json = path.with_suffix(".report.json")

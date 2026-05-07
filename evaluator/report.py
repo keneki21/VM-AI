@@ -1,5 +1,6 @@
 import json
 from datetime import date
+from evaluator import messages
 
 _SEV_ORDER     = {"high": 0, "medium": 1, "low": 2}
 _GRADE_SCALE   = [(8.5, "A"), (7.5, "B+"), (6.5, "B"), (5.5, "C+"), (4.5, "C"), (3.5, "D"), (0.0, "F")]
@@ -28,7 +29,7 @@ def _severity(score: float) -> str:
     return "pass"
 
 
-def generate(clip_scores: list, element_issues: list, image_path: str):
+def generate(clip_scores: list, element_issues: list, image_path: str, elements: list = None):
     """Return (dict, formatted_string) for the full evaluation report."""
 
     # Overall weighted score
@@ -42,13 +43,17 @@ def generate(clip_scores: list, element_issues: list, image_path: str):
     for h in clip_scores:
         sev = _severity(h["score"])
         if sev != "pass":
+            if elements is not None:
+                issue, solution = messages.build(h["id"], h["score"], elements)
+            else:
+                issue, solution = h["issue"], h["solution"]
             all_issues.append({
                 "heuristic_id":   h["id"],
                 "heuristic_name": h["name"],
                 "score":          h["score"],
                 "severity":       sev,
-                "issue":          h["issue"],
-                "solution":       h["solution"],
+                "issue":          issue,
+                "solution":       solution,
                 "source":         "uiclip",
             })
 
