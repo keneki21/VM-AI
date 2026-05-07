@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX Report — {{ filename }}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+  /* ── Layout ── */
+  .page { max-width: 900px; margin: 0 auto; padding: 32px 16px 64px; }
+  .back { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: #6b7280; font-size: .88rem; margin-bottom: 24px; }
+  .back:hover { color: #4f46e5; }
+
+  /* ── Header card ── */
+  .header-card { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 4px 24px rgba(0,0,0,.07); display: flex; align-items: center; gap: 32px; flex-wrap: wrap; margin-bottom: 24px; }
+  .score-ring { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: #e5e7eb; stroke-width: 10; }
+  .ring-fill { fill: none; stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
+  .ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-score { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+  .ring-grade { font-size: .95rem; font-weight: 700; color: #6b7280; }
+  .header-info h1 { font-size: 1.4rem; font-weight: 700; }
+  .header-info .meta { font-size: .83rem; color: #9ca3af; margin-top: 4px; }
+  .header-info .summary { margin-top: 12px; font-size: .92rem; color: #374151; line-height: 1.6; }
+
+  /* ── Section headers ── */
+  .section-title { font-size: 1rem; font-weight: 700; color: #374151; margin: 32px 0 14px; text-transform: uppercase; letter-spacing: .05em; font-size: .78rem; }
+
+  /* ── Heuristic bars ── */
+  .heuristic-list { display: flex; flex-direction: column; gap: 10px; }
+  .h-row { background: #fff; border-radius: 12px; padding: 14px 18px; box-shadow: 0 1px 6px rgba(0,0,0,.05); display: flex; align-items: center; gap: 14px; }
+  .h-num { font-size: .75rem; font-weight: 700; color: #9ca3af; width: 26px; flex-shrink: 0; }
+  .h-name { font-size: .88rem; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .h-bar-wrap { width: 180px; flex-shrink: 0; background: #f3f4f6; border-radius: 99px; height: 8px; }
+  .h-bar { height: 8px; border-radius: 99px; transition: width .6s ease; }
+  .h-score { font-size: .85rem; font-weight: 700; width: 42px; text-align: right; flex-shrink: 0; }
+  .h-tag { font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; flex-shrink: 0; }
+
+  /* ── Issue cards ── */
+  .issues-grid { display: flex; flex-direction: column; gap: 14px; }
+  .issue-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 6px rgba(0,0,0,.05); border-left: 4px solid; }
+  .issue-card.high   { border-color: #ef4444; }
+  .issue-card.medium { border-color: #f97316; }
+  .issue-card.low    { border-color: #eab308; }
+  .issue-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .sev-badge { font-size: .68rem; font-weight: 800; padding: 3px 9px; border-radius: 99px; text-transform: uppercase; letter-spacing: .04em; }
+  .sev-badge.high   { background: #fee2e2; color: #b91c1c; }
+  .sev-badge.medium { background: #ffedd5; color: #c2410c; }
+  .sev-badge.low    { background: #fef9c3; color: #a16207; }
+  .issue-heuristic { font-size: .8rem; color: #6b7280; font-weight: 500; }
+  .issue-title { font-size: .95rem; font-weight: 600; color: #1f2937; margin-bottom: 6px; }
+  .issue-body { font-size: .87rem; color: #374151; line-height: 1.6; }
+  .solution-label { font-size: .75rem; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: .05em; margin-top: 10px; margin-bottom: 3px; }
+  .solution-body { font-size: .87rem; color: #374151; line-height: 1.6; }
+
+  /* ── Screenshot preview ── */
+  .preview-wrap { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,.05); margin-bottom: 8px; }
+  .preview-wrap img { width: 100%; display: block; max-height: 340px; object-fit: cover; object-position: top; }
+
+  /* ── Color helpers ── */
+  .c-green  { color: #16a34a; }
+  .c-orange { color: #ea580c; }
+  .c-red    { color: #dc2626; }
+  .bg-green  { background: #16a34a; }
+  .bg-orange { background: #ea580c; }
+  .bg-red    { background: #dc2626; }
+  .tag-pass   { background: #dcfce7; color: #15803d; }
+  .tag-low    { background: #fef9c3; color: #a16207; }
+  .tag-medium { background: #ffedd5; color: #c2410c; }
+  .tag-high   { background: #fee2e2; color: #b91c1c; }
+
+  .no-issues { text-align:center; padding: 32px; color: #16a34a; font-weight:600; font-size:1.05rem; }
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="/">← Evaluate another screenshot</a>
+
+  <!-- Header -->
+  <div class="header-card">
+    <div class="score-ring">
+      <svg width="110" height="110" viewBox="0 0 110 110">
+        <circle class="ring-bg" cx="55" cy="55" r="46"/>
+        <circle class="ring-fill {{ ring_color }}" cx="55" cy="55" r="46"
+          stroke-dasharray="{{ circumference }}"
+          stroke-dashoffset="{{ dashoffset }}"
+          stroke="{{ stroke_hex }}"/>
+      </svg>
+      <div class="ring-text">
+        <span class="ring-score {{ ring_color }}">{{ overall }}</span>
+        <span class="ring-grade">{{ grade }}</span>
+      </div>
+    </div>
+    <div class="header-info">
+      <h1>UX Heuristics Report</h1>
+      <div class="meta">{{ filename }} &nbsp;·&nbsp; {{ date }} &nbsp;·&nbsp; {{ issue_count }} issue(s) found</div>
+      <div class="summary">{{ summary }}</div>
+    </div>
+  </div>
+
+  <!-- Screenshot preview -->
+  {% if image_url %}
+  <div class="section-title">Screenshot</div>
+  <div class="preview-wrap"><img src="{{ image_url }}" alt="Evaluated screenshot"></div>
+  {% endif %}
+
+  <!-- Heuristic scores -->
+  <div class="section-title">Heuristic Scores</div>
+  <div class="heuristic-list">
+    {% for h in heuristics %}
+    <div class="h-row">
+      <span class="h-num">H{{ loop.index }}</span>
+      <span class="h-name" title="{{ h.name }}">{{ h.name }}</span>
+      <div class="h-bar-wrap">
+        <div class="h-bar {{ h.bar_color }}" style="width:{{ h.bar_pct }}%"></div>
+      </div>
+      <span class="h-score {{ h.text_color }}">{{ h.score }}</span>
+      <span class="h-tag {{ h.tag_class }}">{{ h.tag }}</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Issues -->
+  <div class="section-title">Issues &amp; Solutions</div>
+  <div class="issues-grid">
+    {% if issues %}
+      {% for iss in issues %}
+      <div class="issue-card {{ iss.severity }}">
+        <div class="issue-top">
+          <span class="sev-badge {{ iss.severity }}">{{ iss.severity }}</span>
+          <span class="issue-heuristic">{{ iss.heuristic_name }}</span>
+        </div>
+        <div class="issue-title">Issue</div>
+        <div class="issue-body">{{ iss.issue }}</div>
+        <div class="solution-label">Solution</div>
+        <div class="solution-body">{{ iss.solution }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="no-issues">🎉 No issues detected — great UX!</div>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>
